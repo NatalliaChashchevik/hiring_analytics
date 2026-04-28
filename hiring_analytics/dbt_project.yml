@@ -1,0 +1,29 @@
+name: 'hiring_analytics'
+version: '1.0.0'
+
+profile: 'hiring_analytics'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+
+models:
+  hiring_analytics:
+    staging:
+      +schema: staging
+      +materialized: table
+      +meta:
+        elementary:
+          timestamp_column: UPDATED_AT
+    marts:
+      +schema: marts
+      +materialized: table
+
+  elementary:
+    +schema: elementary

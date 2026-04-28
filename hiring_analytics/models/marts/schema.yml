@@ -1,0 +1,188 @@
+version: 2
+
+models:
+
+  - name: fct_interviews
+    description: '{{ doc("fct_interviews") }}'
+    columns:
+      - name: INTERVIEW_ID
+        description: "Business key for the interview."
+        data_tests:
+          - not_null
+          - unique
+      - name: CANDIDATE_TYPE
+        description: "Type of candidate (e.g. Applicant, Referral)."
+      - name: CANDIDATE_ID
+        description: "Foreign key to dim_candidates."
+        data_tests:
+          - not_null
+      - name: INTERVIEWER_ID
+        description: "Foreign key to dim_employees — the interviewer."
+      - name: LOCATION
+        description: "Interview location or conferencing platform (e.g. MS_TEAMS)."
+      - name: LOGGED
+        description: "Whether the interview session was logged."
+      - name: MEDIA_AVAILABLE
+        description: "Whether a media recording is available for the interview."
+      - name: RUN_TYPE
+        description: "Execution mode of the interview (ONLINE or OFFLINE)."
+      - name: TYPE
+        description: "Interview type (e.g. Technical, HR)."
+      - name: CREATED_AT
+        description: "Timestamp when the interview record was first created."
+      - name: SCHEDULED_AT
+        description: "Timestamp when the interview moved to SCHEDULED status."
+      - name: IN_PROGRESS_AT
+        description: "Timestamp when the interview moved to IN_PROGRESS status. Populated for online interviews only."
+      - name: PENDING_FEEDBACK_AT
+        description: "Timestamp when the interview moved to PENDING_FEEDBACK status."
+      - name: COMPLETED_AT
+        description: "Timestamp when the interview moved to COMPLETED status."
+      - name: PASSED_AT
+        description: "Timestamp when the interview result was set to PASSED."
+      - name: FAILED_AT
+        description: "Timestamp when the interview result was set to FAILED."
+      - name: CANCELLED_AT
+        description: "Timestamp when the interview was CANCELLED."
+      - name: INTERVIEW_DURATION_MINUTES
+        description: '{{ doc("interview_duration_minutes") }}'
+      - name: FEEDBACK_DELAY_MINUTES
+        description: "Elapsed minutes from PENDING_FEEDBACK to COMPLETED — time taken to submit feedback."
+      - name: CANDIDATE_STAFFING_STATUS
+        description: "Candidate staffing status at interview creation time (PIT join to dim_candidates)."
+      - name: CANDIDATE_ENGLISH_LEVEL
+        description: "Candidate English level at interview creation time."
+      - name: CANDIDATE_JOB_FUNCTION_ID
+        description: "Candidate job function at interview creation time."
+      - name: CANDIDATE_PRIMARY_SKILL_ID
+        description: "Candidate primary skill at interview creation time."
+      - name: INTERVIEWER_PRODUCTION_CATEGORY
+        description: "Interviewer production category at interview creation time (PIT join to dim_employees)."
+      - name: INTERVIEWER_ORG_CATEGORY
+        description: "Interviewer organisational category at interview creation time."
+      - name: INTERVIEWER_ORG_CATEGORY_TYPE
+        description: "Interviewer organisational category type at interview creation time."
+      - name: INTERVIEWER_JOB_FUNCTION_ID
+        description: "Interviewer job function at interview creation time."
+      - name: INTERVIEWER_PRIMARY_SKILL_ID
+        description: "Interviewer primary skill at interview creation time."
+
+  - name: dim_candidates
+    description: '{{ doc("scd2_validity_columns") }}'
+    columns:
+      - name: CANDIDATE_ID
+        description: "Business key for the candidate."
+        data_tests:
+          - not_null
+      - name: PRIMARY_SKILL_ID
+        description: "Foreign key to dim_skills — candidate's primary skill."
+      - name: STAFFING_STATUS
+        description: "Current staffing status of the candidate (e.g. BENCH, ASSIGNED)."
+      - name: ENGLISH_LEVEL
+        description: "Candidate's English proficiency level."
+      - name: JOB_FUNCTION_ID
+        description: "Foreign key to dim_job_functions."
+      - name: CREATED_AT
+        description: "Timestamp when the candidate record was first created."
+      - name: UPDATED_AT
+        description: "Timestamp of the last update to this candidate version."
+      - name: VALID_FROM
+        description: "Start of the validity window for this SCD2 row version."
+      - name: VALID_TO
+        description: "End of the validity window. 9999-12-31 for the current active row."
+      - name: ROW_IS_ACTIVE
+        description: "1 if this is the current active version of the candidate record, 0 otherwise."
+
+  - name: dim_employees
+    description: '{{ doc("scd2_validity_columns") }}'
+    columns:
+      - name: EMPLOYEE_ID
+        description: "Business key for the employee."
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: JOB_FUNCTION_ID
+        description: "Foreign key to dim_job_functions."
+      - name: PRIMARY_SKILL_ID
+        description: "Foreign key to dim_skills — employee's primary skill."
+      - name: PRODUCTION_CATEGORY
+        description: "Production category of the employee (e.g. DELIVERY, SUPPORT)."
+      - name: EMPLOYMENT_STATUS
+        description: "Current employment status of the employee."
+      - name: ORG_CATEGORY
+        description: "Organisational category (e.g. ENGINEERING)."
+      - name: ORG_CATEGORY_TYPE
+        description: "Organisational category type (e.g. INTERNAL, EXTERNAL)."
+      - name: WORK_START_AT
+        description: "Date the employee started working."
+      - name: WORK_END_AT
+        description: "Date the employee stopped working. NULL for currently active employees."
+      - name: IS_ACTIVE
+        description: "Whether the employee is currently active."
+      - name: CREATED_AT
+        description: "Timestamp when the employee record was first created."
+      - name: UPDATED_AT
+        description: "Timestamp of the last update to this employee version."
+      - name: VALID_FROM
+        description: "Start of the validity window for this SCD2 row version."
+      - name: VALID_TO
+        description: "End of the validity window. 9999-12-31 for the current active row."
+      - name: ROW_IS_ACTIVE
+        description: "1 if this is the current active version of the employee record, 0 otherwise."
+
+  - name: dim_job_functions
+    description: >
+      Current (latest active) snapshot of job function reference data.
+      Sourced from stg_raw__latest_job_functions (ROW_IS_ACTIVE = 1 only).
+    columns:
+      - name: JOB_FUNCTION_ID
+        description: "Business key for the job function."
+        data_tests:
+          - not_null
+          - unique
+      - name: BASE_NAME
+        description: "Base name of the job function."
+      - name: CATEGORY
+        description: "Category grouping of the job function."
+      - name: IS_ACTIVE
+        description: "Whether the job function is currently active."
+      - name: LEVEL
+        description: "Hierarchical level of the job function."
+      - name: TRACK
+        description: "Career track for the job function."
+      - name: SENIORITY_LEVEL
+        description: "Seniority level label (e.g. Junior, Senior)."
+      - name: SENIORITY_INDEX
+        description: "Numeric seniority index for ordering."
+      - name: UPDATED_AT
+        description: "Timestamp of the last update to this job function record."
+
+  - name: dim_skills
+    description: >
+      Current (latest active) snapshot of skills reference data.
+      Sourced from stg_raw__latest_skills (ROW_IS_ACTIVE = 1 only).
+    columns:
+      - name: SKILL_ID
+        description: "Business key for the skill."
+        data_tests:
+          - not_null
+          - unique
+      - name: IS_ACTIVE
+        description: "Whether the skill is currently active."
+      - name: IS_PRIMARY
+        description: "Whether this skill can be a primary skill."
+      - name: IS_KEY
+        description: "Whether this is a key/critical skill."
+      - name: IS_KEY_REASON
+        description: "Reason why the skill is classified as key."
+      - name: TYPE
+        description: "Skill type or category."
+      - name: NAME
+        description: "Display name of the skill."
+      - name: URL
+        description: "Reference URL for the skill."
+      - name: PARENT_ID
+        description: "Foreign key to the parent skill (for hierarchical skills)."
+      - name: UPDATED_AT
+        description: "Timestamp of the last update to this skill record."

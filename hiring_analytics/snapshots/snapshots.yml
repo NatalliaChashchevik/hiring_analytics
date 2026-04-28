@@ -1,0 +1,22 @@
+version: 2
+
+snapshots:
+  - name: snapshot_interviews
+    description: Tracks all changes to interview records over time using SCD2 strategy.
+    relation: ref('stg_raw__interviews')
+    config:
+      schema: snapshots
+      unique_key: ID
+      strategy: check
+      check_cols:
+        - CANDIDATE_TYPE
+        - CANDIDATE_ID
+        - INTERVIEWER_ID
+        - LOCATION
+        - LOGGED
+        - MEDIA_AVAILABLE
+        - RUN_TYPE
+        - TYPE
+        - MEDIA_STATUS
+        - INVITE_ANSWER_STATUS
+      hard_deletes: invalidate

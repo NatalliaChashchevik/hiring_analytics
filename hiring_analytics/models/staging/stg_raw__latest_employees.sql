@@ -1,0 +1,1 @@
+{{ latest_staging_model('stg_raw__employees') }}

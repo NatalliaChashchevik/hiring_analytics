@@ -1,0 +1,32 @@
+{{config (alias = 'stg_date', materialized = 'table')}}
+
+WITH RECURSIVE 
+date_bounds AS (
+	SELECT MIN_DATE, MAX_DATE
+	FROM {{ ref('stg_generated__date_limits') }}
+),
+date_serie AS (
+	SELECT MIN_DATE AS DATE
+	FROM date_bounds
+	UNION ALL
+	SELECT DATEADD(DAY, 1, DATE) AS DATE
+	FROM date_serie
+	WHERE DATE < (SELECT MAX_DATE FROM date_bounds)
+),
+final AS (
+	SELECT
+		DATE,
+		YEAR(DATE) AS YEAR,
+		QUARTER(DATE) AS QUARTER,
+		MONTH(DATE) AS MONTH,
+		DAY(DATE) AS DAY,
+		WEEKISO(DATE) AS WEEK,
+		DAYOFWEEKISO(DATE) AS DAY_OF_WEEK,
+		DAYNAME(DATE) AS DAY_NAME,
+		TO_VARCHAR(DATE, 'MMMM') AS MONTH_NAME,
+		IFF(DAYOFWEEKISO(DATE) IN (6, 7), TRUE, FALSE) AS IS_WEEKEND,
+		FALSE AS IS_HOLIDAY
+	FROM date_serie
+)
+SELECT *
+FROM final

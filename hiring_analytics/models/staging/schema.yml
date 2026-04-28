@@ -1,0 +1,95 @@
+version: 2
+
+models:
+
+  - name: stg_raw__interviews
+    description: "Cleaned and typed interview records with SCD2 validity columns."
+    data_tests:
+      - elementary.volume_anomalies
+      - elementary.freshness_anomalies
+      - elementary.dimension_anomalies:
+          arguments:
+            dimensions:
+              - STATUS
+    columns:
+      - name: ID
+        description: "Surrogate row key (_OFFSET cast to INT)."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: INTERVIEW_ID
+        description: "Business key for the interview."
+        data_tests:
+          - not_null
+
+      - name: STATUS
+        description: "Interview status."
+        data_tests:
+          # Built-in: accepted_values
+          - accepted_values:
+              config:
+                severity: warn
+              arguments:
+                values: ['SCHEDULED', 'IN_PROGRESS', 'PENDING_FEEDBACK',
+                         'COMPLETED', 'PASSED', 'FAILED', 'CANCELLED',
+                         'DRAFT', 'REQUESTED']
+
+      - name: ROW_VALID_FROM
+        description: "Start of the validity window for this row version."
+        data_tests:
+          # dbt_expectations: column must be of timestamp type
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: timestamp_ntz
+
+  - name: stg_raw__candidates
+    description: "Cleaned and typed candidate records with SCD2 validity columns."
+    data_tests:
+      - elementary.volume_anomalies
+      - elementary.freshness_anomalies
+    columns:
+      - name: CANDIDATE_ID
+        description: "Business key for the candidate."
+        data_tests:
+          - not_null
+
+  - name: stg_raw__employees
+    description: "Cleaned and typed employee records with SCD2 validity columns."
+    data_tests:
+      - elementary.volume_anomalies
+      - elementary.freshness_anomalies
+      # dbt_utils: WORK_START_AT must be earlier than WORK_END_AT where not null
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "WORK_END_AT IS NULL OR WORK_START_AT <= WORK_END_AT"
+    columns:
+      - name: EMPLOYEE_ID
+        description: "Business key for the employee."
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: WORK_START_AT
+        description: "Employee work start date."
+
+  - name: stg_raw__job_functions
+    description: "Cleaned job function reference data with SCD2 validity columns."
+    data_tests:
+      - elementary.volume_anomalies
+    columns:
+      - name: JOB_FUNCTION_ID
+        description: "Business key for the job function."
+        data_tests:
+          - not_null
+
+  - name: stg_raw__skills
+    description: "Cleaned skill reference data with SCD2 validity columns."
+    data_tests:
+      - elementary.volume_anomalies
+    columns:
+      - name: SKILL_ID
+        description: "Business key for the skill."
+        data_tests:
+          - not_null

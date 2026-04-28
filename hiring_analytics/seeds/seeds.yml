@@ -1,0 +1,40 @@
+version: 2
+
+seeds:
+  - name: configuration
+    description: "Data mapping configuration for raw to staging tables. It defines the column-level naming and data type conversions."
+    config:
+      quote_columns: false
+      delimiter: ','
+    columns:
+      - name: RAW_TABLE_NAME
+        description: "Source table name from the raw schema."
+        data_type: varchar
+
+      - name: RAW_COLUMN_NAME
+        description: "Source column name from the raw table."
+        data_type: varchar
+
+      - name: RAW_DATA_TYPE
+        description: "Data type of the source column in the raw table."
+        data_type: varchar
+
+      - name: RAW_ORDER_NUM
+        description: "Column position/order in the raw table."
+        data_type: int
+
+      - name: TARGET_TABLE_NAME
+        description: "Destination staging table name."
+        data_type: varchar
+
+      - name: TARGET_COLUMN_NAME
+        description: "Target column name in staging table."
+        data_type: varchar
+
+      - name: TARGET_DATA_TYPE
+        description: "Data type of the column in the staging table."
+        data_type: varchar
+
+      - name: TARGET_ORDER_NUM
+        description: "Column position/order in the staging table."
+        data_type: int

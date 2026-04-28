@@ -1,0 +1,255 @@
+unit_tests:
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # Test 1a: Online interview – INTERVIEW_DURATION_MINUTES is computed
+  #
+  # Given an online interview with IN_PROGRESS at 09:00 and PENDING_FEEDBACK at 10:00,
+  # INTERVIEW_DURATION_MINUTES should equal 60 (the elapsed time between the two statuses).
+  # ──────────────────────────────────────────────────────────────────────────────
+  - name: test_online_interview_computes_interview_duration
+    description: |
+      INTERVIEW_DURATION_MINUTES is the time elapsed from IN_PROGRESS to PENDING_FEEDBACK.
+      Only online interviews reach IN_PROGRESS status, so this metric should be populated
+      for online interviews and computed as DATEDIFF(minute, IN_PROGRESS_AT, PENDING_FEEDBACK_AT).
+    model: fct_interviews
+    given:
+      - input: ref('stg_raw__interviews')
+        rows:
+          - {INTERVIEW_ID: 'INT001', CANDIDATE_ID: 'C001', INTERVIEWER_ID: 'E001',
+             STATUS: 'SCHEDULED',        CANDIDATE_TYPE: 'Applicant', LOCATION: 'MS_TEAMS',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ONLINE', TYPE: 'Technical',
+             CREATED_AT: '2024-01-15 08:00:00', UPDATED_AT: '2024-01-15 08:00:00',
+             ROW_VALID_FROM: '2024-01-15 08:00:00'}
+          - {INTERVIEW_ID: 'INT001', CANDIDATE_ID: 'C001', INTERVIEWER_ID: 'E001',
+             STATUS: 'IN_PROGRESS',      CANDIDATE_TYPE: 'Applicant', LOCATION: 'MS_TEAMS',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ONLINE', TYPE: 'Technical',
+             CREATED_AT: '2024-01-15 08:00:00', UPDATED_AT: '2024-01-15 09:00:00',
+             ROW_VALID_FROM: '2024-01-15 09:00:00'}
+          - {INTERVIEW_ID: 'INT001', CANDIDATE_ID: 'C001', INTERVIEWER_ID: 'E001',
+             STATUS: 'PENDING_FEEDBACK', CANDIDATE_TYPE: 'Applicant', LOCATION: 'MS_TEAMS',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ONLINE', TYPE: 'Technical',
+             CREATED_AT: '2024-01-15 08:00:00', UPDATED_AT: '2024-01-15 10:00:00',
+             ROW_VALID_FROM: '2024-01-15 10:00:00'}
+          - {INTERVIEW_ID: 'INT001', CANDIDATE_ID: 'C001', INTERVIEWER_ID: 'E001',
+             STATUS: 'COMPLETED',        CANDIDATE_TYPE: 'Applicant', LOCATION: 'MS_TEAMS',
+             LOGGED: true,  MEDIA_AVAILABLE: true,  RUN_TYPE: 'ONLINE', TYPE: 'Technical',
+             CREATED_AT: '2024-01-15 08:00:00', UPDATED_AT: '2024-01-15 12:30:00',
+             ROW_VALID_FROM: '2024-01-15 12:30:00'}
+
+      - input: ref('dim_candidates')
+        rows:
+          - {CANDIDATE_ID: 'C001', VALID_FROM: '2024-01-01 00:00:00', VALID_TO: '2099-12-31 00:00:00',
+             STAFFING_STATUS: 'BENCH', ENGLISH_LEVEL: 'B2',
+             JOB_FUNCTION_ID: 'JF001', PRIMARY_SKILL_ID: 'SK001'}
+
+      - input: ref('dim_employees')
+        rows:
+          - {EMPLOYEE_ID: 'E001', VALID_FROM: '2024-01-01 00:00:00', VALID_TO: '2099-12-31 00:00:00',
+             PRODUCTION_CATEGORY: 'DELIVERY', ORG_CATEGORY: 'ENGINEERING',
+             ORG_CATEGORY_TYPE: 'INTERNAL', JOB_FUNCTION_ID: 'JF002', PRIMARY_SKILL_ID: 'SK002'}
+
+    expect:
+      rows:
+        - {INTERVIEW_ID: 'INT001', INTERVIEW_DURATION_MINUTES: 60}
+
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # Test 1b: Online interview – FEEDBACK_DELAY_MINUTES is computed
+  #
+  # Given PENDING_FEEDBACK at 10:00 and COMPLETED at 12:30,
+  # FEEDBACK_DELAY_MINUTES should equal 150.
+  # ──────────────────────────────────────────────────────────────────────────────
+  - name: test_online_interview_computes_feedback_delay
+    description: |
+      FEEDBACK_DELAY_MINUTES is the time elapsed from PENDING_FEEDBACK to COMPLETED.
+      It measures how long it took reviewers to submit feedback after the interview ended.
+      Computed as DATEDIFF(minute, PENDING_FEEDBACK_AT, COMPLETED_AT).
+    model: fct_interviews
+    given:
+      - input: ref('stg_raw__interviews')
+        rows:
+          - {INTERVIEW_ID: 'INT001', CANDIDATE_ID: 'C001', INTERVIEWER_ID: 'E001',
+             STATUS: 'SCHEDULED',        CANDIDATE_TYPE: 'Applicant', LOCATION: 'MS_TEAMS',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ONLINE', TYPE: 'Technical',
+             CREATED_AT: '2024-01-15 08:00:00', UPDATED_AT: '2024-01-15 08:00:00',
+             ROW_VALID_FROM: '2024-01-15 08:00:00'}
+          - {INTERVIEW_ID: 'INT001', CANDIDATE_ID: 'C001', INTERVIEWER_ID: 'E001',
+             STATUS: 'IN_PROGRESS',      CANDIDATE_TYPE: 'Applicant', LOCATION: 'MS_TEAMS',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ONLINE', TYPE: 'Technical',
+             CREATED_AT: '2024-01-15 08:00:00', UPDATED_AT: '2024-01-15 09:00:00',
+             ROW_VALID_FROM: '2024-01-15 09:00:00'}
+          - {INTERVIEW_ID: 'INT001', CANDIDATE_ID: 'C001', INTERVIEWER_ID: 'E001',
+             STATUS: 'PENDING_FEEDBACK', CANDIDATE_TYPE: 'Applicant', LOCATION: 'MS_TEAMS',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ONLINE', TYPE: 'Technical',
+             CREATED_AT: '2024-01-15 08:00:00', UPDATED_AT: '2024-01-15 10:00:00',
+             ROW_VALID_FROM: '2024-01-15 10:00:00'}
+          - {INTERVIEW_ID: 'INT001', CANDIDATE_ID: 'C001', INTERVIEWER_ID: 'E001',
+             STATUS: 'COMPLETED',        CANDIDATE_TYPE: 'Applicant', LOCATION: 'MS_TEAMS',
+             LOGGED: true,  MEDIA_AVAILABLE: true,  RUN_TYPE: 'ONLINE', TYPE: 'Technical',
+             CREATED_AT: '2024-01-15 08:00:00', UPDATED_AT: '2024-01-15 12:30:00',
+             ROW_VALID_FROM: '2024-01-15 12:30:00'}
+
+      - input: ref('dim_candidates')
+        rows:
+          - {CANDIDATE_ID: 'C001', VALID_FROM: '2024-01-01 00:00:00', VALID_TO: '2099-12-31 00:00:00',
+             STAFFING_STATUS: 'BENCH', ENGLISH_LEVEL: 'B2',
+             JOB_FUNCTION_ID: 'JF001', PRIMARY_SKILL_ID: 'SK001'}
+
+      - input: ref('dim_employees')
+        rows:
+          - {EMPLOYEE_ID: 'E001', VALID_FROM: '2024-01-01 00:00:00', VALID_TO: '2099-12-31 00:00:00',
+             PRODUCTION_CATEGORY: 'DELIVERY', ORG_CATEGORY: 'ENGINEERING',
+             ORG_CATEGORY_TYPE: 'INTERNAL', JOB_FUNCTION_ID: 'JF002', PRIMARY_SKILL_ID: 'SK002'}
+
+    expect:
+      rows:
+        - {INTERVIEW_ID: 'INT001', FEEDBACK_DELAY_MINUTES: 150}
+
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # Test 2: Offline interview – INTERVIEW_DURATION_MINUTES is NULL (no IN_PROGRESS)
+  #
+  # An async/offline interview skips IN_PROGRESS:
+  #   SCHEDULED → PENDING_FEEDBACK (10:00) → COMPLETED (11:00)
+  #
+  # Expected:
+  #   INTERVIEW_DURATION_MINUTES = null  (no IN_PROGRESS status ever recorded)
+  #   FEEDBACK_DELAY_MINUTES     = DATEDIFF(minute, 10:00, 11:00) = 60
+  # ──────────────────────────────────────────────────────────────────────────────
+  - name: test_offline_interview_has_null_duration
+    description: |
+      Offline/async interviews skip the IN_PROGRESS status entirely.
+      INTERVIEW_DURATION_MINUTES must be NULL when IN_PROGRESS_AT is never recorded,
+      because the metric is only defined as elapsed time from IN_PROGRESS to PENDING_FEEDBACK.
+    model: fct_interviews
+    given:
+      - input: ref('stg_raw__interviews')
+        rows:
+          - {INTERVIEW_ID: 'INT002', CANDIDATE_ID: 'C002', INTERVIEWER_ID: 'E002',
+             STATUS: 'SCHEDULED',        CANDIDATE_TYPE: 'Applicant', LOCATION: 'INTERVIEW_PLATFORM',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ASYNC', TYPE: 'Technical',
+             CREATED_AT: '2024-01-16 08:00:00', UPDATED_AT: '2024-01-16 08:00:00',
+             ROW_VALID_FROM: '2024-01-16 08:00:00'}
+          - {INTERVIEW_ID: 'INT002', CANDIDATE_ID: 'C002', INTERVIEWER_ID: 'E002',
+             STATUS: 'PENDING_FEEDBACK', CANDIDATE_TYPE: 'Applicant', LOCATION: 'INTERVIEW_PLATFORM',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ASYNC', TYPE: 'Technical',
+             CREATED_AT: '2024-01-16 08:00:00', UPDATED_AT: '2024-01-16 10:00:00',
+             ROW_VALID_FROM: '2024-01-16 10:00:00'}
+          - {INTERVIEW_ID: 'INT002', CANDIDATE_ID: 'C002', INTERVIEWER_ID: 'E002',
+             STATUS: 'COMPLETED',        CANDIDATE_TYPE: 'Applicant', LOCATION: 'INTERVIEW_PLATFORM',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ASYNC', TYPE: 'Technical',
+             CREATED_AT: '2024-01-16 08:00:00', UPDATED_AT: '2024-01-16 11:00:00',
+             ROW_VALID_FROM: '2024-01-16 11:00:00'}
+
+      - input: ref('dim_candidates')
+        rows:
+          - {CANDIDATE_ID: 'C002', VALID_FROM: '2024-01-01 00:00:00', VALID_TO: '2099-12-31 00:00:00',
+             STAFFING_STATUS: 'BENCH', ENGLISH_LEVEL: 'B1',
+             JOB_FUNCTION_ID: 'JF001', PRIMARY_SKILL_ID: 'SK001'}
+
+      - input: ref('dim_employees')
+        rows:
+          - {EMPLOYEE_ID: 'E002', VALID_FROM: '2024-01-01 00:00:00', VALID_TO: '2099-12-31 00:00:00',
+             PRODUCTION_CATEGORY: 'DELIVERY', ORG_CATEGORY: 'ENGINEERING',
+             ORG_CATEGORY_TYPE: 'INTERNAL', JOB_FUNCTION_ID: 'JF002', PRIMARY_SKILL_ID: 'SK002'}
+
+    expect:
+      rows:
+        - {INTERVIEW_ID: 'INT002', INTERVIEW_DURATION_MINUTES: null}
+
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # Test 2b: Offline interview – FEEDBACK_DELAY_MINUTES is still computed
+  #
+  # Even though there is no IN_PROGRESS status, the feedback delay from
+  # PENDING_FEEDBACK (10:00) to COMPLETED (11:00) must still equal 60.
+  # ──────────────────────────────────────────────────────────────────────────────
+  - name: test_offline_interview_still_computes_feedback_delay
+    description: |
+      FEEDBACK_DELAY_MINUTES is independent of IN_PROGRESS and applies to all interview types.
+      For an offline interview with PENDING_FEEDBACK at 10:00 and COMPLETED at 11:00,
+      the delay should be 60 minutes.
+    model: fct_interviews
+    given:
+      - input: ref('stg_raw__interviews')
+        rows:
+          - {INTERVIEW_ID: 'INT002', CANDIDATE_ID: 'C002', INTERVIEWER_ID: 'E002',
+             STATUS: 'SCHEDULED',        CANDIDATE_TYPE: 'Applicant', LOCATION: 'INTERVIEW_PLATFORM',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ASYNC', TYPE: 'Technical',
+             CREATED_AT: '2024-01-16 08:00:00', UPDATED_AT: '2024-01-16 08:00:00',
+             ROW_VALID_FROM: '2024-01-16 08:00:00'}
+          - {INTERVIEW_ID: 'INT002', CANDIDATE_ID: 'C002', INTERVIEWER_ID: 'E002',
+             STATUS: 'PENDING_FEEDBACK', CANDIDATE_TYPE: 'Applicant', LOCATION: 'INTERVIEW_PLATFORM',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ASYNC', TYPE: 'Technical',
+             CREATED_AT: '2024-01-16 08:00:00', UPDATED_AT: '2024-01-16 10:00:00',
+             ROW_VALID_FROM: '2024-01-16 10:00:00'}
+          - {INTERVIEW_ID: 'INT002', CANDIDATE_ID: 'C002', INTERVIEWER_ID: 'E002',
+             STATUS: 'COMPLETED',        CANDIDATE_TYPE: 'Applicant', LOCATION: 'INTERVIEW_PLATFORM',
+             LOGGED: false, MEDIA_AVAILABLE: false, RUN_TYPE: 'ASYNC', TYPE: 'Technical',
+             CREATED_AT: '2024-01-16 08:00:00', UPDATED_AT: '2024-01-16 11:00:00',
+             ROW_VALID_FROM: '2024-01-16 11:00:00'}
+
+      - input: ref('dim_candidates')
+        rows:
+          - {CANDIDATE_ID: 'C002', VALID_FROM: '2024-01-01 00:00:00', VALID_TO: '2099-12-31 00:00:00',
+             STAFFING_STATUS: 'BENCH', ENGLISH_LEVEL: 'B1',
+             JOB_FUNCTION_ID: 'JF001', PRIMARY_SKILL_ID: 'SK001'}
+
+      - input: ref('dim_employees')
+        rows:
+          - {EMPLOYEE_ID: 'E002', VALID_FROM: '2024-01-01 00:00:00', VALID_TO: '2099-12-31 00:00:00',
+             PRODUCTION_CATEGORY: 'DELIVERY', ORG_CATEGORY: 'ENGINEERING',
+             ORG_CATEGORY_TYPE: 'INTERNAL', JOB_FUNCTION_ID: 'JF002', PRIMARY_SKILL_ID: 'SK002'}
+
+    expect:
+      rows:
+        - {INTERVIEW_ID: 'INT002', FEEDBACK_DELAY_MINUTES: 60}
+
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # Test 3: PIT join resolves candidate attributes at interview creation time
+  #
+  # Candidate C003 has two SCD2 versions:
+  #   v1: Jan 2024 – Jun 2024  → STAFFING_STATUS = 'BENCH'
+  #   v2: Jun 2024 – ∞         → STAFFING_STATUS = 'PROJECT'
+  #
+  # Interview was created on 2024-03-15 (falls in v1 window).
+  # Expected: CANDIDATE_STAFFING_STATUS = 'BENCH', not 'PROJECT'.
+  # ──────────────────────────────────────────────────────────────────────────────
+  - name: test_pit_join_picks_candidate_state_at_interview_creation
+    description: |
+      Dimension attributes must reflect the candidate's state at interview creation time,
+      not their most recent state. Given two SCD2 versions of a candidate (BENCH Jan–Jun 2024,
+      PROJECT Jun 2024+), an interview created in March 2024 must resolve CANDIDATE_STAFFING_STATUS
+      as BENCH via the point-in-time join on VALID_FROM / VALID_TO.
+    model: fct_interviews
+    given:
+      - input: ref('stg_raw__interviews')
+        rows:
+          - {INTERVIEW_ID: 'INT003', CANDIDATE_ID: 'C003', INTERVIEWER_ID: 'E003',
+             STATUS: 'COMPLETED', CANDIDATE_TYPE: 'Applicant', LOCATION: 'MS_TEAMS',
+             LOGGED: true, MEDIA_AVAILABLE: true, RUN_TYPE: 'ONLINE', TYPE: 'Technical',
+             CREATED_AT: '2024-03-15 10:00:00', UPDATED_AT: '2024-03-15 10:00:00',
+             ROW_VALID_FROM: '2024-03-15 10:00:00'}
+
+      - input: ref('dim_candidates')
+        rows:
+          # v1: candidate was BENCH Jan–Jun 2024 (interview created 2024-03-15 → falls here)
+          - {CANDIDATE_ID: 'C003', VALID_FROM: '2024-01-01 00:00:00', VALID_TO: '2024-06-01 00:00:00',
+             STAFFING_STATUS: 'BENCH',   ENGLISH_LEVEL: 'B2',
+             JOB_FUNCTION_ID: 'JF001', PRIMARY_SKILL_ID: 'SK001'}
+          # v2: candidate moved to PROJECT from Jun 2024 onwards
+          - {CANDIDATE_ID: 'C003', VALID_FROM: '2024-06-01 00:00:00', VALID_TO: '2099-12-31 00:00:00',
+             STAFFING_STATUS: 'PROJECT', ENGLISH_LEVEL: 'B2',
+             JOB_FUNCTION_ID: 'JF001', PRIMARY_SKILL_ID: 'SK001'}
+
+      - input: ref('dim_employees')
+        rows:
+          - {EMPLOYEE_ID: 'E003', VALID_FROM: '2024-01-01 00:00:00', VALID_TO: '2099-12-31 00:00:00',
+             PRODUCTION_CATEGORY: 'DELIVERY', ORG_CATEGORY: 'ENGINEERING',
+             ORG_CATEGORY_TYPE: 'INTERNAL', JOB_FUNCTION_ID: 'JF002', PRIMARY_SKILL_ID: 'SK002'}
+
+    expect:
+      rows:
+        # BENCH (v1) should be resolved, not PROJECT (v2)
+        - {INTERVIEW_ID: 'INT003', CANDIDATE_STAFFING_STATUS: 'BENCH'}

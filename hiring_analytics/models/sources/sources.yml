@@ -1,0 +1,111 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Raw source data for hiring analytics stored in Snowflake Raw Schema."
+    database: DBT_PROJECT
+    schema: RAW
+    tables:
+      - name: candidates
+        description: "Candidates records. All attributes are VARCHAR(500). Last updated tracked in _updated_micros attribute."
+        config:
+          loaded_at_field: "TO_TIMESTAMP_NTZ(_updated_micros::NUMBER, 6)"
+          freshness:
+            warn_after: {count: 90, period: day}
+            error_after: {count: 180, period: day}
+        columns:
+          - name: _OFFSET
+            description: "Unique row offset (surrogate key)."
+            data_tests:
+              - not_null
+              - unique:
+                  config:
+                    severity: warn
+          - name: CANDIDATE_ID
+            description: "Business key for the candidate."
+            data_tests:
+              - not_null
+          - name: _UPDATED_MICROS
+            description: "Last updated timestamp in microseconds."
+            data_tests:
+              - not_null
+
+      - name: employees
+        description: "Employees records. All attributes are VARCHAR(500). Last updated tracked in _updated_micros attribute."
+        config:
+          loaded_at_field: "TO_TIMESTAMP_NTZ(_updated_micros::NUMBER, 6)"
+          freshness:
+            warn_after: {count: 180, period: day}
+            error_after: {count: 860, period: day}
+        columns:
+          - name: _OFFSET
+            description: "Unique row offset (surrogate key)."
+            data_tests:
+              - not_null
+              - unique
+          - name: EMPLOYEE_ID
+            description: "Business key for the employee."
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: _UPDATED_MICROS
+            description: "Last updated timestamp in microseconds."
+            data_tests:
+              - not_null
+
+      - name: interviews
+        description: "Interview events records. All attributes are VARCHAR(500). Last updated tracked in _updated_micros attribute."
+        config:
+          loaded_at_field: "TO_TIMESTAMP_NTZ(_updated_micros::NUMBER, 6)"
+          freshness:
+            warn_after: {count: 550, period: day}
+            error_after: {count: 860, period: day}
+        columns:
+          - name: _OFFSET
+            description: "Unique row offset (surrogate key)."
+            data_tests:
+              - not_null
+              - unique
+          - name: ID
+            description: "Business key for the interview."
+            data_tests:
+              - not_null
+          - name: CANDIDATE_ID
+            description: "Foreign key to candidates."
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('raw', 'candidates')
+                    field: CANDIDATE_ID
+          - name: _UPDATED_MICROS
+            description: "Last updated timestamp in microseconds."
+            data_tests:
+              - not_null
+
+      - name: job_functions
+        description: "Job functions reference data. All attributes are VARCHAR(500). Last updated tracked in _updated_micros attribute."
+        columns:
+          - name: _OFFSET
+            description: "Unique row offset (surrogate key)."
+            data_tests:
+              - not_null
+              - unique
+          - name: JOB_FUNCTION_ID
+            description: "Business key for the job function."
+            data_tests:
+              - not_null
+
+      - name: skills
+        description: "Skills reference data. All attributes are VARCHAR(500). Last updated tracked in _updated_micros attribute."
+        columns:
+          - name: _OFFSET
+            description: "Unique row offset (surrogate key)."
+            data_tests:
+              - not_null
+              - unique
+          - name: ID
+            description: "Business key for the skill."
+            data_tests:
+              - not_null
